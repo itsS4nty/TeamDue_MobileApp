@@ -1,2 +1,2 @@
 # TeamDue_MobileApp
-TeamDue MobileApp
+MobileApp
