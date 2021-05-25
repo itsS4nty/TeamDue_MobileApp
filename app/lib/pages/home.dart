@@ -65,7 +65,7 @@ class _MyAppState extends State<Inicio> {
               },
               child: Text(
                 "Cerrar Sesión",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.black),
               ))
         ],
       ),
