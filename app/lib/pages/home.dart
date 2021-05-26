@@ -6,48 +6,34 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+// late SharedPreferences sharedPreferences;
+
 class Inicio extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<Inicio> {
-  late Future<List<Archivos>> _listaArchivos;
-  late SharedPreferences sharedPreferences;
-
-  checkLoginStatus() async {
-    sharedPreferences = await SharedPreferences.getInstance();
-    print(sharedPreferences.getString("token"));
-    if (sharedPreferences.getString("token") == null) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil("/", (Route<dynamic> route) => false);
-    }
-  }
-
-  Future<List<Archivos>> _getArchivos() async {
-    final response =
-        await http.get(Uri.parse("http://51.38.225.18:3000/files/8"));
-
-    List<Archivos> archivos = [];
-
-    if (response.statusCode == 200) {
-      String body = utf8.decode(response.bodyBytes);
-      final jsonData = jsonDecode(body);
-      for (var item in jsonData) {
-        archivos.add(Archivos(
-            item["id"], item["nombre"], item["tipo"], item["UsuarioId"]));
-      }
-
-      return archivos;
-    } else {
-      throw Exception("Fallo en la conexión");
-    }
-  }
+  late List<Archivos> _listaArchivos = [];
+  late String token = "";
 
   @override
   void initState() {
     super.initState();
-    checkLoginStatus();
-    _listaArchivos = _getArchivos();
+    getToken().then((valueToken) => {
+          if (valueToken != "null")
+            {
+              getId().then((value) => _getArchivos(value).then((valueArchivos) {
+                    setState(() {
+                      _listaArchivos.addAll(valueArchivos);
+                    });
+                  }))
+            }
+          else
+            {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil("/", (Route<dynamic> route) => false)
+            }
+        });
   }
 
   @override
@@ -59,7 +45,8 @@ class _MyAppState extends State<Inicio> {
         actions: <Widget>[
           TextButton(
               onPressed: () {
-                sharedPreferences.clear();
+                // sharedPreferences.clear();
+                clearPrefrences();
                 Navigator.of(context).pushNamedAndRemoveUntil(
                     "/", (Route<dynamic> route) => false);
               },
@@ -69,9 +56,62 @@ class _MyAppState extends State<Inicio> {
               ))
         ],
       ),
-      body: new Container(
-        child: new Text("Hola"),
-      ),
+      body: new Column(children: [
+        Expanded(
+            child: ListView.builder(
+          itemCount: _listaArchivos.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Container(
+              padding: EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                  border: Border(
+                      bottom: BorderSide(color: Colors.amber, width: 1))),
+              child: Text(
+                _listaArchivos[index].nombre + "." + _listaArchivos[index].tipo,
+                style: TextStyle(fontSize: 16),
+              ),
+            );
+          },
+        ))
+      ]),
     );
+  }
+}
+
+Future<void> clearPrefrences() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.clear();
+}
+
+Future<int> getId() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return await prefs.getInt("idUsuario") ?? -1;
+}
+
+Future<String> getToken() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return await prefs.getString("token") ?? "null";
+}
+
+Future<List<Archivos>> _getArchivos(idUsu) async {
+  print(idUsu);
+
+  final response = await http
+      .get(Uri.parse("http://51.38.225.18:3000/files/" + idUsu.toString()));
+
+  List<Archivos> archivos = [];
+
+  if (response.statusCode == 200) {
+    print("Status code: 200");
+    String body = utf8.decode(response.bodyBytes);
+    final jsonData = jsonDecode(body);
+    for (var item in jsonData) {
+      archivos.add(Archivos(
+          item["id"], item["nombre"], item["tipo"], item["UsuarioId"]));
+      print(item);
+    }
+    return archivos;
+  } else {
+    throw Exception("Fallo en la conexión");
   }
 }

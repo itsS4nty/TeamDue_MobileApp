@@ -163,7 +163,8 @@ logeando(usuario, password, context) async {
     print(jsonData);
 
     sharedPreferences.setString("token", jsonData["token"]);
-
+    print(jsonData["usuario"]["id"].runtimeType);
+    sharedPreferences.setInt("idUsuario", jsonData["usuario"]["id"]);
     Navigator.of(context)
         .pushNamedAndRemoveUntil("/home", (Route<dynamic> route) => false);
   } else {
