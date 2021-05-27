@@ -1,3 +1,4 @@
+import 'package:app/pages/image.dart';
 import 'package:flutter/material.dart';
 import 'package:app/models/archivos.dart';
 import 'package:flutter/services.dart';
@@ -78,10 +79,19 @@ class _MyAppState extends State<Inicio> {
                     itemCount: _listaArchivos.length,
                     itemBuilder: (BuildContext context, int index) {
                       return InkWell(
+                        // return InkWell(
                         onTap: () {
-                          print(_listaArchivos[index].id);
-                          getToken().then((value) => descargarArchivo(
-                              _listaArchivos[index].id, value));
+                          // print(_listaArchivos[index].id);
+                          // getToken().then((value) => descargarArchivo(
+                          //     _listaArchivos[index].id, value, context));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ImagePage(
+                                      _listaArchivos[index].id.toString(),
+                                      _listaArchivos[index].nombre +
+                                          "." +
+                                          _listaArchivos[index].tipo)));
                         },
                         child: Container(
                           padding: EdgeInsets.all(15),
@@ -89,11 +99,36 @@ class _MyAppState extends State<Inicio> {
                               border: Border(
                                   bottom: BorderSide(
                                       color: Colors.amber, width: 1))),
-                          child: Text(
-                            _listaArchivos[index].nombre +
-                                "." +
-                                _listaArchivos[index].tipo,
-                            style: TextStyle(fontSize: 16),
+                          child: Row(
+                            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _listaArchivos[index].tipo == "txt"
+                                  ? Image.asset("assets/images/texto.png")
+                                  : Image.asset("assets/images/imagen.png"),
+                              SizedBox(
+                                width: 20,
+                              ),
+                              Text(
+                                _listaArchivos[index].nombre +
+                                    "." +
+                                    _listaArchivos[index].tipo,
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Spacer(),
+                              TextButton(
+                                  style: TextButton.styleFrom(
+                                      primary: Colors.white,
+                                      backgroundColor: Colors.amber[400],
+                                      onSurface: Colors.grey),
+                                  onPressed: () {
+                                    print(_listaArchivos[index].id);
+                                    getToken().then((value) => descargarArchivo(
+                                        _listaArchivos[index].id,
+                                        value,
+                                        context));
+                                  },
+                                  child: Text("Descargar"))
+                            ],
                           ),
                         ),
                       );
@@ -120,8 +155,6 @@ Future<String> getToken() async {
 }
 
 Future<List<Archivos>> _getArchivos(idUsu) async {
-  print(idUsu);
-
   final response = await http
       .get(Uri.parse("http://51.38.225.18:3000/files/" + idUsu.toString()));
 
@@ -138,37 +171,25 @@ Future<List<Archivos>> _getArchivos(idUsu) async {
     }
     return archivos;
   } else {
-    throw Exception("Fallo en la conexión");
+    return [];
   }
 }
 
-descargarArchivo(idArchivo, token) async {
-  // var headers = {'Content-type': 'application/json', 'token': token};
-
-  // final response = await http.get(
-  //     Uri.parse(
-  //         "http://51.38.225.18:3000/downloadFile/" + idArchivo.toString()),
-  //     headers: {'Content-type': 'application/json', 'token': token});
-
-  // if (response.statusCode == 200) {
-  //   print("Status code: 200");
-  //   print(response.request);
-  // }
-
+descargarArchivo(idArchivo, token, context) async {
   try {
-    // Saved with this method.
     var imageId = await ImageDownloader.downloadImage(
         "http://51.38.225.18:3000/downloadFile/" + idArchivo.toString());
     if (imageId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("No se ha podido descargar el archivo")));
       return;
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Archivo descargado")));
     }
-
-    // Below is a method of obtaining saved image information.
-    // var fileName = await ImageDownloader.findName(imageId);
-    // var path = await ImageDownloader.findPath(imageId);
-    // var size = await ImageDownloader.findByteSize(imageId);
-    // var mimeType = await ImageDownloader.findMimeType(imageId);
   } on PlatformException catch (error) {
     print(error);
   }
 }
+
+verArchivo(idArchivo, token, context) async {}
