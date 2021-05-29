@@ -1,4 +1,5 @@
 import 'package:app/pages/image.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:app/models/archivos.dart';
 import 'package:flutter/services.dart';
@@ -18,9 +19,13 @@ class Inicio extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
+var refreshKey = GlobalKey<RefreshIndicatorState>();
+late List<Archivos> _listaArchivos = [];
+late var _idUsu;
+late int lenArchivos;
+
 class _MyAppState extends State<Inicio> {
   bool loading = true;
-  late List<Archivos> _listaArchivos = [];
   late String token = "";
 
   @override
@@ -31,7 +36,9 @@ class _MyAppState extends State<Inicio> {
             {
               getId().then((value) => _getArchivos(value).then((valueArchivos) {
                     setState(() {
-                      _listaArchivos.addAll(valueArchivos);
+                      _idUsu = value;
+                      _listaArchivos = valueArchivos;
+                      lenArchivos = _listaArchivos.length;
                     });
                   })),
               loading = false
@@ -75,67 +82,98 @@ class _MyAppState extends State<Inicio> {
                       child: CircularProgressIndicator(),
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _listaArchivos.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return InkWell(
-                        // return InkWell(
-                        onTap: () {
-                          // print(_listaArchivos[index].id);
-                          // getToken().then((value) => descargarArchivo(
-                          //     _listaArchivos[index].id, value, context));
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ImagePage(
-                                      _listaArchivos[index].id.toString(),
-                                      _listaArchivos[index].nombre +
-                                          "." +
-                                          _listaArchivos[index].tipo)));
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                              border: Border(
-                                  bottom: BorderSide(
-                                      color: Colors.amber, width: 1))),
-                          child: Row(
-                            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _listaArchivos[index].tipo == "txt"
-                                  ? Image.asset("assets/images/texto.png")
-                                  : Image.asset("assets/images/imagen.png"),
-                              SizedBox(
-                                width: 20,
-                              ),
-                              Text(
-                                _listaArchivos[index].nombre +
-                                    "." +
-                                    _listaArchivos[index].tipo,
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              Spacer(),
-                              TextButton(
-                                  style: TextButton.styleFrom(
-                                      primary: Colors.white,
-                                      backgroundColor: Colors.amber[400],
-                                      onSurface: Colors.grey),
-                                  onPressed: () {
-                                    print(_listaArchivos[index].id);
-                                    getToken().then((value) => descargarArchivo(
-                                        _listaArchivos[index].id,
-                                        value,
-                                        context));
-                                  },
-                                  child: Text("Descargar"))
-                            ],
+                : RefreshIndicator(
+                    key: refreshKey,
+                    onRefresh: refreshList,
+                    child: ListView.builder(
+                      itemCount: lenArchivos,
+                      itemBuilder: (BuildContext context, int index) {
+                        return InkWell(
+                          // return InkWell(
+                          onTap: () {
+                            // print(_listaArchivos[index].id);
+                            // getToken().then((value) => descargarArchivo(
+                            //     _listaArchivos[index].id, value, context));
+                            if (_listaArchivos[index].tipo == "txt") {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => ImagePage(
+                                          _listaArchivos[index].id.toString(),
+                                          _listaArchivos[index].nombre +
+                                              "." +
+                                              _listaArchivos[index].tipo)));
+                            } else {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => ImagePage(
+                                          _listaArchivos[index].id.toString(),
+                                          _listaArchivos[index].nombre +
+                                              "." +
+                                              _listaArchivos[index].tipo)));
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                                border: Border(
+                                    bottom: BorderSide(
+                                        color: Colors.amber, width: 1))),
+                            child: Row(
+                              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _listaArchivos[index].tipo == "txt"
+                                    ? Image.asset("assets/images/texto.png")
+                                    : Image.asset("assets/images/imagen.png"),
+                                SizedBox(
+                                  width: 20,
+                                ),
+                                Text(
+                                  _listaArchivos[index].nombre +
+                                      "." +
+                                      _listaArchivos[index].tipo,
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                Spacer(),
+                                TextButton(
+                                    style: TextButton.styleFrom(
+                                        primary: Colors.white,
+                                        backgroundColor: Colors.amber[400],
+                                        onSurface: Colors.grey),
+                                    onPressed: () {
+                                      print(_listaArchivos[index].id);
+                                      getToken().then((value) =>
+                                          descargarArchivo(
+                                              _listaArchivos[index].id,
+                                              value,
+                                              context,
+                                              _listaArchivos[index].tipo));
+                                    },
+                                    child: Text("Descargar"))
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ))
       ]),
     );
+  }
+
+  Future<void> refreshList() async {
+    print(lenArchivos);
+    print(_idUsu.toString() + " fff");
+    refreshKey.currentState?.show(atTop: false);
+    await Future.delayed(Duration(seconds: 2));
+    _getArchivos(_idUsu).then((value) => {
+          setState(() {
+            _listaArchivos = value;
+          })
+        });
+    print(_listaArchivos);
+    print(lenArchivos);
   }
 }
 
@@ -169,27 +207,33 @@ Future<List<Archivos>> _getArchivos(idUsu) async {
           item["id"], item["nombre"], item["tipo"], item["UsuarioId"]));
       print(item);
     }
+    lenArchivos = archivos.length;
     return archivos;
   } else {
     return [];
   }
 }
 
-descargarArchivo(idArchivo, token, context) async {
-  try {
-    var imageId = await ImageDownloader.downloadImage(
-        "http://51.38.225.18:3000/downloadFile/" + idArchivo.toString());
-    if (imageId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("No se ha podido descargar el archivo")));
-      return;
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Archivo descargado")));
+descargarArchivo(idArchivo, token, context, tipo) async {
+  if (tipo == "txt") {
+    var dio = Dio();
+    var resonse = await dio.download(
+        "http://51.38.225.18:3000/downloadFile/" + idArchivo.toString(), "./f");
+    print(resonse.data.toString());
+  } else {
+    try {
+      var imageId = await ImageDownloader.downloadImage(
+          "http://51.38.225.18:3000/downloadFile/" + idArchivo.toString());
+      if (imageId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("No se ha podido descargar el archivo")));
+        return;
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Archivo descargado")));
+      }
+    } on PlatformException catch (error) {
+      print(error);
     }
-  } on PlatformException catch (error) {
-    print(error);
   }
 }
-
-verArchivo(idArchivo, token, context) async {}
