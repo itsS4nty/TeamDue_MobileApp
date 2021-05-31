@@ -23,7 +23,7 @@ class _MyAppState extends State<Login> {
           usuario(),
           password(),
           botonLogin(),
-          botonRecordarPassword(),
+          // botonRecordarPassword(),
           botonRegistrar()
         ],
       ),
@@ -102,7 +102,31 @@ class botonLogin extends StatelessWidget {
               " y password: " +
               passwordCampo.text);
 
-          logeando(usuarioCampo.text, passwordCampo.text, context);
+          logeando(usuarioCampo.text, passwordCampo.text, context)
+              .then((value) => {
+                    if (value)
+                      {
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                            "/home", (Route<dynamic> route) => false)
+                      }
+                    else
+                      {
+                        showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                                  title: Text("Login"),
+                                  content:
+                                      Text("Usuario o contraseña incorrecto "),
+                                  actions: <Widget>[
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("Aceptar"))
+                                  ],
+                                ))
+                      }
+                  });
         },
         child: Text('Iniciar sesión'),
       ),
@@ -139,6 +163,7 @@ class botonRegistrar extends StatelessWidget {
         ),
         onPressed: () {
           print("Boton registrar pulsado");
+          Navigator.of(context).pushNamed("/register");
         },
         child: Text('Si no tienes cuenta. ¡Registrate!'),
       ),
@@ -146,7 +171,7 @@ class botonRegistrar extends StatelessWidget {
   }
 }
 
-logeando(usuario, password, context) async {
+Future<bool> logeando(usuario, password, context) async {
   Map data = {"usuario": usuario, "password": password};
 
   var jsonData = null;
@@ -165,9 +190,9 @@ logeando(usuario, password, context) async {
     sharedPreferences.setString("token", jsonData["token"]);
     print(jsonData["usuario"]["id"].runtimeType);
     sharedPreferences.setInt("idUsuario", jsonData["usuario"]["id"]);
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil("/home", (Route<dynamic> route) => false);
+
+    return true;
   } else {
-    print(response.body);
+    return false;
   }
 }

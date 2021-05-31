@@ -57,6 +57,7 @@ class _MyAppState extends State<Inicio> {
     return Scaffold(
       appBar: new AppBar(
         title: new Text("Inicio"),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.amber[400],
         actions: <Widget>[
           TextButton(
@@ -95,14 +96,6 @@ class _MyAppState extends State<Inicio> {
                             // getToken().then((value) => descargarArchivo(
                             //     _listaArchivos[index].id, value, context));
                             if (_listaArchivos[index].tipo == "txt") {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => ImagePage(
-                                          _listaArchivos[index].id.toString(),
-                                          _listaArchivos[index].nombre +
-                                              "." +
-                                              _listaArchivos[index].tipo)));
                             } else {
                               Navigator.push(
                                   context,
@@ -141,15 +134,19 @@ class _MyAppState extends State<Inicio> {
                                         primary: Colors.white,
                                         backgroundColor: Colors.amber[400],
                                         onSurface: Colors.grey),
-                                    onPressed: () {
-                                      print(_listaArchivos[index].id);
-                                      getToken().then((value) =>
-                                          descargarArchivo(
-                                              _listaArchivos[index].id,
-                                              value,
-                                              context,
-                                              _listaArchivos[index].tipo));
-                                    },
+                                    onPressed: _listaArchivos[index].tipo ==
+                                            "txt"
+                                        ? null
+                                        : () {
+                                            print(_listaArchivos[index].id);
+                                            getToken().then((value) =>
+                                                descargarArchivo(
+                                                    _listaArchivos[index].id,
+                                                    value,
+                                                    context,
+                                                    _listaArchivos[index]
+                                                        .tipo));
+                                          },
                                     child: Text("Descargar"))
                               ],
                             ),
